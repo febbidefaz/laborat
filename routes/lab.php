@@ -99,6 +99,9 @@ Route::post('/update-pxrs/{id}', [RawatInapController::class, 'updatePxRS'])
     ->name('update.pxrs');
 
 Route::get('/print/{idLab}', [LabPrintController::class, 'print'])
-    ->name('print');    
+    ->name('print');  
+
+Route::get('/printkwitansi/{idLab}', [LabPrintController::class, 'printkwitansi'])
+    ->name('printkwitansi');      
 
 Route::get('/cari-pasien-id', [LabController::class, 'cariPasien'])->name('cari.pasien.id'); 

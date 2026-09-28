@@ -1382,4 +1382,33 @@
 
         openLabPrint(url);
     }
+
+    function printLabKwitansiModal() {
+
+        const idLab = $('#labIDLab').val();
+
+        if (!idLab) {
+
+            notifWarning(
+                'ID Lab belum tersedia',
+                'Silakan pilih data laboratorium terlebih dahulu.'
+            );
+
+            return;
+        }
+
+
+        let url = @json(route('lab.printkwitansi', [
+                'idLab' => '__IDLAB__',
+            ]));
+
+
+        url = url.replace(
+            '__IDLAB__',
+            encodeURIComponent(idLab)
+        );
+
+
+        openLabPrint(url);
+    }
 </script>

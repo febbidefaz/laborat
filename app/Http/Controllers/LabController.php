@@ -33,6 +33,19 @@ class LabController extends Controller
             'items.*.NorL'       => 'nullable|string',
         ]);
 
+        $username = substr(
+            (string) session('userlab_username'),
+            0,
+            25
+        );
+        
+        if ($username === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Username petugas tidak ditemukan di session.',
+            ], 422);
+        }
+
         DB::beginTransaction();
 
         try {
@@ -93,6 +106,7 @@ class LabController extends Controller
                     spPK,
                     Note,
                     Tunai,
+                    Usr,
                     KlasID,
                     RoomID,
                     Jam_ambil,
@@ -111,6 +125,7 @@ class LabController extends Controller
                 (
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
+                    ?,
                     GETDATE(),
                     GETDATE(),
                     ?,
@@ -125,6 +140,7 @@ class LabController extends Controller
                 $request->spPK,
                 $request->Note,
                 0,
+                $username,
                 $klasID,    
                 $roomID,
                 $jamAmbil,
@@ -156,6 +172,7 @@ class LabController extends Controller
                     'Levels'  => null,
                     'Biaya'   => $item['Biaya'] ?? 0,
                     'Pot'     => $item['Pot'] ?? 0,
+                    'Usr'     => $username,
                     'NorL'    => $item['NorL'] ?? null,
 
                     'IsOk' => !empty($item['IsOk']) ? 1 : 0,
@@ -384,6 +401,19 @@ class LabController extends Controller
                 'items.*.Reagen'            => 'nullable|numeric',
             ]);
 
+            $username = substr(
+                (string) session('userlab_username'),
+                0,
+                25
+            );
+
+            if ($username === '') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Username petugas tidak ditemukan di session.',
+                ], 422);
+            }
+
             DB::beginTransaction();
 
             try {
@@ -462,6 +492,7 @@ class LabController extends Controller
                     spPK,
                     Note,
                     Tunai,
+                    Usr,
                     KlasID,
                     RoomID,
                     Jam_ambil,
@@ -482,6 +513,7 @@ class LabController extends Controller
                 (
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
+                    ?,
                     GETDATE(),
                     GETDATE(),
                     ?, ?, ?,
@@ -497,8 +529,9 @@ class LabController extends Controller
                 $request->NoteSpPK,
 
                 0,      // Tunai
-                null,   // KlasID
-                null,   // RoomID
+                $username,       
+                $klasID,
+                $roomID,
 
                 $jamAmbil,
                 $jamCheck,
@@ -565,8 +598,8 @@ class LabController extends Controller
                     'Pot' =>
                         $pot,
 
-                    'Usr' =>
-                        auth()->user()->name ?? 'WEB',
+                    #'Usr' => auth()->user()->name ?? 'WEB',
+                    'Usr' => $username,    
 
                     'NorL' =>
                         $item['NorL'] ?? null,
@@ -673,6 +706,19 @@ class LabController extends Controller
             'items.*.Administrasi'      => 'nullable|numeric',
             'items.*.Reagen'            => 'nullable|numeric',
         ]);
+
+        $username = substr(
+            (string) session('userlab_username'),
+            0,
+            25
+        );
+        
+        if ($username === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Username petugas tidak ditemukan di session.',
+            ], 422);
+        }
 
 
         DB::beginTransaction();
@@ -940,8 +986,8 @@ class LabController extends Controller
                         'Pot' =>
                             $pot,
 
-                        'Usr' =>
-                            auth()->user()->name ?? 'WEB',
+                        #'Usr' =>   auth()->user()->name ?? 'WEB',
+                        'Usr' => $username,    
 
                         'NorL' =>
                             $item['NorL'] ?? null,
@@ -1451,7 +1497,7 @@ class LabController extends Controller
     }
 
     public function simpanHeaderLab(Request $request)
-    {
+    {      
         $request->validate([
             'IDREG'      => 'required|integer',
             'Tanggal'    => 'required|date',
@@ -1464,7 +1510,19 @@ class LabController extends Controller
             'JamCheck'   => 'nullable',
             'NoteSpPK'   => 'nullable|string',
         ]);
-    
+
+        $username = substr(
+            (string) session('userlab_username'),
+            0,
+            25
+        );
+        
+        if ($username === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Username petugas tidak ditemukan di session.',
+            ], 422);
+        }
     
         DB::beginTransaction();
     
@@ -1624,6 +1682,7 @@ class LabController extends Controller
                     spPK,
                     Note,
                     Tunai,
+                    Usr,
                     KlasID,
                     RoomID,
                     Jam_ambil,
@@ -1643,6 +1702,7 @@ class LabController extends Controller
                 (
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
+                    ?,
                     GETDATE(),
                     GETDATE(),
                     ?, ?, ?,
@@ -1662,6 +1722,7 @@ class LabController extends Controller
                 $request->NoteSpPK,
     
                 0, 
+                $username,
                
                 $klasID,
                 

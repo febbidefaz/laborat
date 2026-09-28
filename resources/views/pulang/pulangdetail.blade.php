@@ -49,98 +49,136 @@
 
             <div class="card-body py-3">
 
-                <div class="row">
+                <div class="row align-items-start">
 
-                    <div class="col-md-2">
-
-                        <small class="text-muted d-block">
-                            ID
-                        </small>
-
-                        <strong>
+                    {{-- ID --}}
+                    <div class="col patient-info-item">
+                        <div class="patient-info-label">ID</div>
+                        <div class="patient-info-value font-weight-bold">
                             {{ $pasien->ID ?? '-' }}
-                        </strong>
-
+                        </div>
                     </div>
 
 
-                    <div class="col">
-                        <small class="text-muted d-block" style="font-size:13px">
-                            No SEP
-                        </small>
+                    {{-- NO SEP --}}
+                    <div class="col patient-info-item">
+                        <div class="patient-info-label">No SEP</div>
 
-                        <div class="font-weight-bold text-info" style="font-size:16px; cursor:pointer;"
+                        <div class="patient-info-value font-weight-bold text-info" style="cursor:pointer;"
                             onclick="showSepDetail('{{ $pasien->NoSEP }}')">
+
                             {{ $pasien->NoSEP ?? '-' }}
                         </div>
                     </div>
 
-                    <div class="col">
-                        <small class="text-muted d-block" style="font-size:13px">
-                            No RM
-                        </small>
 
-                        <div class="font-weight-bold" style="font-size:16px">
-                            {{ $pasien->RegNum }}
+                    {{-- NO RM --}}
+                    <div class="col patient-info-item">
+                        <div class="patient-info-label">No RM</div>
+
+                        <div class="patient-info-value font-weight-bold">
+                            {{ $pasien->RegNum ?? '-' }}
                         </div>
                     </div>
 
 
-                    <div class="col-md-2">
+                    {{-- LABEL --}}
+                    <div class="col patient-info-item">
+                        <div class="patient-info-label">
+                            Label
+                        </div>
 
-                        <small class="text-muted d-block">
-                            PxRS
-                        </small>
+                        <div class="patient-info-value">
+                            <div class="dropdown">
 
-                        <strong class="text-primary" style="cursor:pointer;" onclick="openUpdatePxRS()"
-                            title="Klik untuk mengubah PxRS">
+                                <a href="javascript:void(0)" class="label-link label-block dropdown-toggle"
+                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 
-                            <span id="textPxRS">
-                                {{ $pasien->PxRS ?? '-' }}
-                            </span>
+                                    <i class="fas fa-tag mr-1"></i>
+                                    Label
+                                </a>
 
-                        </strong>
+                                <div class="dropdown-menu">
 
+                                    <a class="dropdown-item" href="javascript:void(0)"
+                                        onclick="openLabelPrint(
+                                            '{{ route('rawatinap.label.tengah', ['id' => $pasien->ID]) }}'
+                                        )">
+                                        Label Tengah
+                                    </a>
+
+                                    <a class="dropdown-item" href="javascript:void(0)"
+                                        onclick="openLabelPrint(
+                                            '{{ route('rawatinap.label.samping', ['id' => $pasien->ID]) }}'
+                                        )">
+                                        Label Samping
+                                    </a>
+
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
 
-                    <div class="col">
-                        <small class="text-muted d-block" style="font-size:13px">
-                            Tanggal Masuk
-                        </small>
+                    {{-- PXRS --}}
+                    <div class="col patient-info-item">
+                        <div class="patient-info-label">
+                            PxRS
+                        </div>
 
-                        <div style="font-size:16px">
+                        <div class="patient-info-value">
+
+                            <strong class="text-primary" style="cursor:pointer;" onclick="openUpdatePxRS()"
+                                title="Klik untuk mengubah PxRS">
+
+                                <span id="textPxRS">
+                                    {{ $pasien->PxRS ?? '-' }}
+                                </span>
+
+                            </strong>
+
+                        </div>
+                    </div>
+
+
+                    {{-- TANGGAL MASUK --}}
+                    <div class="col patient-info-item">
+                        <div class="patient-info-label">
+                            Tanggal Masuk
+                        </div>
+
+                        <div class="patient-info-value">
                             {{ $pasien->Tanggal ? date('d/m/Y', strtotime($pasien->Tanggal)) : '-' }}
                         </div>
                     </div>
 
-                    <div class="col">
-                        <small class="text-muted d-block" style="font-size:13px">
-                            Jam Masuk
-                        </small>
 
-                        <div style="font-size:16px">
+                    {{-- JAM MASUK --}}
+                    <div class="col patient-info-item">
+                        <div class="patient-info-label">
+                            Jam Masuk
+                        </div>
+
+                        <div class="patient-info-value">
                             {{ $pasien->Jam_masuk ? date('H:i', strtotime($pasien->Jam_masuk)) : '-' }}
                         </div>
                     </div>
 
-                    <div class="col">
 
-                        <small class="text-muted d-block" style="font-size:13px">
+                    {{-- TANGGAL BAYAR --}}
+                    <div class="col patient-info-item">
+                        <div class="patient-info-label">
                             Tanggal Bayar
-                        </small>
-
-                        <div style="font-size:16px">
-                            {{ $pasien->TglByr ? date('d/m/Y', strtotime($pasien->TglByr)) : '-' }}
                         </div>
 
+                        <div class="patient-info-value">
+                            {{ $pasien->TglByr ? date('d/m/Y', strtotime($pasien->TglByr)) : '-' }}
+                        </div>
                     </div>
-
 
                 </div>
 
             </div>
-
         </div>
 
 
@@ -782,6 +820,102 @@
         #tableInputLab .checkbox-kritis {
             accent-color: #dc3545;
         }
+
+        .patient-info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .patient-info-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        .patient-info-label {
+            height: 18px;
+            margin: 0 0 4px 0;
+
+            font-size: 13px;
+            line-height: 18px;
+
+            color: #6c757d;
+
+            white-space: nowrap;
+        }
+
+        .patient-info-value {
+            height: 24px;
+
+            display: flex;
+            align-items: center;
+
+            margin: 0;
+            padding: 0;
+
+            font-size: 16px;
+            line-height: 24px;
+
+            white-space: nowrap;
+        }
+
+        .label-link {
+            display: inline-flex;
+            align-items: center;
+
+            height: 24px;
+
+            margin: 0;
+            padding: 0;
+
+            font-size: 16px;
+            line-height: 24px;
+            font-weight: 700;
+
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .label-link:hover,
+        .label-link:focus {
+            color: #0056b3;
+            text-decoration: none;
+        }
+
+        .label-link.dropdown-toggle::after {
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        .label-block {
+            display: inline-flex;
+            align-items: center;
+
+            height: 24px;
+            padding: 0 8px;
+
+            background: #007bff;
+            color: #fff !important;
+
+            border-radius: 4px;
+
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 24px;
+
+            text-decoration: none !important;
+        }
+
+        .label-block:hover,
+        .label-block:focus {
+            background: #0069d9;
+            color: #fff !important;
+            text-decoration: none !important;
+        }
+
+        .label-block.dropdown-toggle::after {
+            margin-left: 6px;
+        }
     </style>
 
 @stop
@@ -806,5 +940,7 @@
     @include('rawatinap.js.js-ri-sep')
 
     @include('rawatinap.js.js-ri-pxrs')
+
+    @include('rawatinap.js.js-ri-label')
 
 @stop

@@ -736,15 +736,6 @@
 
                     </button>
 
-                    <button type="button" class="btn btn-info btn-sm mr-2" id="btnPrintLab"
-                        onclick="printLabModal()">
-
-                        <i class="fas fa-print mr-1"></i>
-                        Print Lab
-
-                    </button>
-
-
                     <button type="button" class="btn btn-danger btn-sm mr-2" id="btnHapusLab" style="display:none;"
                         onclick="hapusLab()">
 
@@ -753,6 +744,21 @@
 
                     </button>
 
+                    <button type="button" class="btn btn-info btn-sm mr-2" id="btnPrintKwitansiLab"
+                        onclick="printLabKwitansiModal()">
+
+                        <i class="fas fa-print mr-1"></i>
+                        Print Kwitansi
+
+                    </button>
+
+                    <button type="button" class="btn btn-info btn-sm mr-2" id="btnPrintLab"
+                        onclick="printLabModal()">
+
+                        <i class="fas fa-print mr-1"></i>
+                        Print Lab
+
+                    </button>
 
                     <button type="button" class="btn btn-success btn-sm" id="btnSimpanLab" onclick="simpanLab()">
 

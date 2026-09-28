@@ -254,4 +254,58 @@ class RawatInapController extends Controller
             ], 500);
         }
     }
+
+    public function printLabelTengah($id)
+    {
+        $rows = DB::select(
+            'EXEC dbo.skotlet @ID = ?',
+            [(int) $id]
+        );
+    
+        if (empty($rows)) {
+            abort(404, 'Data pasien tidak ditemukan.');
+        }
+    
+        $row = $rows[0];
+    
+        $patient = [
+            'ID' => $row->ID ?? '-',
+            'RegNum' => $row->RegNum ?? '-',
+            'Nama' => $row->Nama ?? '-',
+            'Addr' => $row->Addr ?? '-',
+            'Tanggal_Lahir' => $row->Tanggal_Lahir ?? null,
+        ];
+    
+        return view(
+            'rawatinap.label.label-tengah',
+            compact('patient')
+        );
+    }
+
+    public function printLabelSamping($id)
+    {
+        $rows = DB::select(
+            'EXEC dbo.skotlet @ID = ?',
+            [(int) $id]
+        );
+    
+        if (empty($rows)) {
+            abort(404, 'Data pasien tidak ditemukan.');
+        }
+    
+        $row = $rows[0];
+    
+        $patient = [
+            'ID' => $row->ID ?? '-',
+            'RegNum' => $row->RegNum ?? '-',
+            'Nama' => $row->Nama ?? '-',
+            'Addr' => $row->Addr ?? '-',
+            'Tanggal_Lahir' => $row->Tanggal_Lahir ?? null,
+        ];
+    
+        return view(
+            'rawatinap.label.label-samping',
+            compact('patient')
+        );
+    }
 }
