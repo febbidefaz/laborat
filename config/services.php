@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'lis' => [
+        'base_url' => env('LIS_BASE_URL'),
+        'api_key' => env('LIS_API_KEY'),
+        'kode_rs' => env('LIS_KODE_RS', 'E03'),
+        'kode_lab' => env('LIS_KODE_LAB', 'LAB_RSAB'),
+        'timeout' => env('LIS_TIMEOUT', 30),
+    ],
+
 ];
