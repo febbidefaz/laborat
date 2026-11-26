@@ -105,3 +105,9 @@ Route::get('/printkwitansi/{idLab}', [LabPrintController::class, 'printkwitansi'
     ->name('printkwitansi');      
 
 Route::get('/cari-pasien-id', [LabController::class, 'cariPasien'])->name('cari.pasien.id'); 
+
+Route::post('/lis-api/registrasi', [LabController::class, 'registrasiLISApi'])
+    ->name('lis.api.registrasi');
+
+Route::post('/lis-api/tarik', [LabController::class, 'tarikLISNew'])
+    ->name('lis.api.tarik');

@@ -11,6 +11,7 @@
 
             return;
         }
+        tampilkanStatusLISNew('');
 
         // lanjut kode lama...
 
@@ -69,6 +70,9 @@
         // MODE UPDATE
         // ============================================================
 
+        // Reset status LIS
+        tampilkanStatusLISNew('');
+
         loadGrupLab();
         loadGrupKelompokLab();
         loadNoLISLab();
@@ -126,6 +130,9 @@
 
 
                 const h = res.header;
+
+                // STATUS REGISTRASI LIS BARU
+                tampilkanStatusLISNew(h.No_Lab_LIS_New ?? '');
 
 
                 // ====================================================

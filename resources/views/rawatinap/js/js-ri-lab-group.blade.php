@@ -36,7 +36,7 @@
 
                 let html = `
                     <option value="">
-                        -- Pilih Grup Pemeriksaan --
+                        -- Grup Pemeriksaan --
                     </option>
                 `;
 
@@ -689,6 +689,193 @@
 
             }
 
+        });
+    }
+
+    async function registrasiLISLab() {
+
+        const idLab = $('#labIDLab').val();
+        const idReg = $('#labIDReg').val();
+        const $btn = $('#btnRegLIS');
+
+        console.log('========== REG LIS ==========');
+        console.log('IDLab:', idLab);
+        console.log('IDReg:', idReg);
+        console.log('URL:', "{{ route('lab.lis.api.registrasi') }}");
+
+        if (!idLab || !/^\d+$/.test(idLab)) {
+            notifWarning(
+                'ID Lab belum tersedia',
+                'Simpan pemeriksaan laboratorium terlebih dahulu.'
+            );
+            return;
+        }
+
+        if ($btn.prop('disabled')) {
+            return;
+        }
+
+        const url = "{{ route('lab.lis.api.registrasi') }}";
+
+        async function kirimRegistrasi(ulang, nomorLama = '') {
+            return $.ajax({
+                url: url,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    IDLab: idLab,
+                    konfirmasi_ulang: ulang ? 1 : 0,
+                    no_lab_sebelumnya: nomorLama,
+                    alasan: ulang ?
+                        'Registrasi ulang melalui modal Laboratorium' : ''
+                }
+            });
+        }
+
+        $btn.prop('disabled', true)
+            .html(
+                '<i class="fas fa-spinner fa-spin mr-1"></i> Memproses...'
+            );
+
+        try {
+
+            let res;
+
+            try {
+                // Cek/registrasi pertama
+                res = await kirimRegistrasi(false);
+
+            } catch (xhr) {
+
+                const error = xhr.responseJSON || {};
+
+                if (!error.confirmation_required) {
+                    throw xhr;
+                }
+
+                const nomorLama = error.no_lab_lama;
+
+                // =====================================
+                // KONFIRMASI REGISTRASI ULANG
+                // =====================================
+                const konfirmasi = await konfirmasiAksi({
+                    title: 'Registrasi LIS Sudah Ada',
+                    text: 'ID Lab: ' + idLab +
+                        '\nNo LIS sebelumnya: ' + nomorLama +
+                        '\n\nRegistrasi ulang akan mengganti ' +
+                        'nomor LIS aktif dan menyimpan nomor ' +
+                        'sebelumnya dalam riwayat.',
+                    confirmText: 'Ya, Registrasi Ulang'
+                });
+
+                if (!konfirmasi.isConfirmed) {
+                    return;
+                }
+
+                // Kirim ulang dengan persetujuan petugas
+                res = await kirimRegistrasi(true, nomorLama);
+            }
+
+            if (!res.success) {
+                throw {
+                    responseJSON: res
+                };
+            }
+
+            const noLab = res.no_lab || '-';
+
+            tampilkanStatusLISNew(res.no_lab);
+
+            if (res.registrasi_ulang) {
+                notifSuccess(
+                    'Registrasi ulang berhasil. No LIS baru: ' + noLab
+                );
+            } else {
+                notifSuccess(
+                    'Registrasi LIS berhasil. No LIS: ' + noLab
+                );
+            }
+
+            console.log('Registrasi LIS berhasil:', res);
+
+            // Jangan isi #labNoLIS di sini karena
+            // dropdown tersebut digunakan untuk LIS lama.
+            // Nomor LIS ADAM disimpan pada No_Lab_LIS_New.
+
+        } catch (xhr) {
+
+            console.error(
+                'Registrasi LIS gagal:',
+                xhr.responseJSON || xhr
+            );
+
+            const error = xhr.responseJSON || {};
+
+            const pesan = Array.isArray(error.message) ?
+                error.message.map(item =>
+                    item.msg || JSON.stringify(item)
+                ).join('\n') :
+                (error.message ||
+                    'Registrasi gagal atau status belum pasti.');
+
+            notifError(
+                'Registrasi LIS Gagal',
+                pesan
+            );
+
+        } finally {
+
+            $btn.prop('disabled', false);
+
+            cekStatusLISNew();
+        }
+    }
+
+
+    function cekStatusLISNew() {
+
+        const idLab = String($('#labIDLab').val() || '').trim();
+
+        if (!idLab) {
+            tampilkanStatusLISNew('');
+            return;
+        }
+
+        $.ajax({
+            url: "{{ route('lab.detail', ['idLab' => '__IDLAB__']) }}"
+                .replace('__IDLAB__', encodeURIComponent(idLab)),
+
+            type: 'GET',
+            dataType: 'json',
+
+            success: function(res) {
+
+                // Abaikan respons jika modal sudah pindah IDLab.
+                if (String($('#labIDLab').val()) !== idLab) {
+                    return;
+                }
+
+                if (res.success && res.header) {
+                    tampilkanStatusLISNew(
+                        res.header.No_Lab_LIS_New
+                    );
+                } else {
+                    $('#btnRegLIS')
+                        .attr('title', 'Gagal membaca status LIS');
+                }
+            },
+
+            error: function(xhr) {
+
+                console.error(
+                    'Gagal membaca status LIS:',
+                    xhr.responseJSON || xhr.responseText
+                );
+
+                $('#btnRegLIS')
+                    .attr('title', 'Status LIS belum dapat diperiksa');
+            }
         });
     }
 </script>

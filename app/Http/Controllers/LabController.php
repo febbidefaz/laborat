@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\LisService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -1093,7 +1096,8 @@ class LabController extends Controller
                     L.RoomID,
                     L.No_Lab_LIS,
                     L.verif,
-                    L.Jam_selesai
+                    L.Jam_selesai,
+                    L.No_Lab_LIS_New
                 FROM dbo.Laborat L
                 WHERE L.IDLab = ?
             ", [
@@ -2753,4 +2757,336 @@ class LabController extends Controller
             'data' => $pasien
         ]);
     }
+
+    // Reg LIS Pertamindo      
+    public function registrasiLISApi(Request $request, LisService $lisService)
+    {
+        $data = $request->validate([
+            'IDLab' => 'required|integer|min:1',
+            'konfirmasi_ulang' => 'nullable|boolean',
+            'no_lab_sebelumnya' => 'nullable|string|max:80',
+            'alasan' => 'nullable|string|max:500',
+        ]);
+
+        $idLab = (int) $data['IDLab'];
+        $konfirmasiUlang = $request->boolean('konfirmasi_ulang');
+
+        $username = trim(
+            (string) session('userlab_username', '')
+        );
+
+        if ($username === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Session petugas tidak ditemukan.',
+            ], 401);
+        }
+
+        $db = DB::connection('sqlsrv');
+
+        // Pastikan cache lock didukung dan digunakan bersama
+        // oleh semua instance Laravel.
+        try {
+            $lock = Cache::lock('lis_registrasi_' . $idLab, 90);
+
+            if (!$lock->get()) {
+                return response()->json([
+                    'success' => false,
+                    'message' =>
+                        'Registrasi LIS sedang diproses. '
+                        . 'Periksa status sebelum mengulang.',
+                ], 409);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Lock registrasi LIS gagal', [
+                'IDLab' => $idLab,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Penguncian registrasi LIS gagal. '
+                    . 'Periksa konfigurasi cache.',
+            ], 503);
+        }
+
+        try {
+
+            // =========================================
+            // 1. CEK DATA LABORAT
+            // =========================================
+            $lab = $db->table('dbo.Laborat')
+                ->where('IDLab', $idLab)
+                ->first();
+    
+            if (!$lab) {
+                return response()->json([
+                    'success' => false,
+                    'message' =>
+                        'ID Lab ' . $idLab . ' tidak ditemukan.',
+                ], 404);
+            }
+
+            $noLabLama = trim(
+                (string) ($lab->No_Lab_LIS_New ?? '')
+            );
+
+            // =========================================
+            // 2. JIKA ADA NOMOR, MINTA KONFIRMASI
+            // =========================================
+            if ($noLabLama !== '' && !$konfirmasiUlang) {
+                return response()->json([
+                    'success' => false,
+                    'confirmation_required' => true,
+                    'message' => 'Registrasi LIS sudah ada.',
+                    'IDLab' => $idLab,
+                    'no_lab_lama' => $noLabLama,
+                ], 409);
+            }
+
+            // =========================================
+            // 3. VALIDASI KONFIRMASI ULANG
+            // =========================================
+            if ($konfirmasiUlang) {
+
+                if ($noLabLama === '') {
+                    return response()->json([
+                        'success' => false,
+                        'message' =>
+                            'Nomor LIS sebelumnya tidak tersedia. '
+                            . 'Muat ulang pemeriksaan.',
+                    ], 409);
+                }
+
+                $nomorDisetujui = trim(
+                    (string) ($data['no_lab_sebelumnya'] ?? '')
+                );
+
+                if ($nomorDisetujui !== $noLabLama) {
+                    return response()->json([
+                        'success' => false,
+                        'message' =>
+                            'Nomor LIS telah berubah. '
+                            . 'Muat ulang sebelum registrasi.',
+                    ], 409);
+                }
+            }
+
+            // =========================================
+            // 4. KIRIM KE LIS
+            // =========================================
+            $result = $lisService->registrasiFromSP($idLab);
+
+            if (!($result['success'] ?? false)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['message']
+                        ?? 'Registrasi LIS gagal.',
+                ], 422);
+            }
+
+            $noLabBaru = trim(
+                (string) data_get(
+                    $result,
+                    'payload.registrasi.no_lab',
+                    ''
+                )
+            );
+
+            $noRegistrasi = trim(
+                (string) data_get(
+                    $result,
+                    'payload.registrasi.no_registrasi',
+                    ''
+                )
+            );
+
+            if ($noLabBaru === '') {
+                return response()->json([
+                    'success' => false,
+                    'message' =>
+                        'LIS menerima registrasi tetapi tidak '
+                        . 'mengembalikan nomor laboratorium. '
+                        . 'Periksa LIS sebelum mengulang.',
+                ], 502);
+            }
+
+            if ($noRegistrasi !== (string) $idLab) {
+                return response()->json([
+                    'success' => false,
+                    'message' =>
+                        'Nomor registrasi LIS tidak sesuai '
+                        . 'dengan IDLab SIMRS. '
+                        . 'Perlu rekonsiliasi.',
+                ], 409);
+            }
+
+            // =========================================
+            // 5. TRANSAKSI SQL SERVER
+            // =========================================
+            $db->transaction(function () use (
+                $db,
+                $idLab,
+                $noLabLama,
+                $noLabBaru,
+                $konfirmasiUlang,
+                $username,
+                $data
+            ) {
+
+                // Baca ulang data dalam transaksi
+                $labTerkini = $db->table('dbo.Laborat')
+                    ->where('IDLab', $idLab)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$labTerkini) {
+                    throw new \RuntimeException(
+                        'Data Laborat sudah tidak tersedia.'
+                    );
+                }
+
+                $nomorTerkini = trim(
+                    (string) ($labTerkini->No_Lab_LIS_New ?? '')
+                );
+
+                if ($nomorTerkini !== $noLabLama) {
+                    throw new \RuntimeException(
+                        'Nomor LIS berubah selama proses. '
+                        . 'Perlu rekonsiliasi.'
+                    );
+                }
+
+                // SIMPAN RIWAYAT HANYA JIKA REGISTRASI ULANG
+                if ($konfirmasiUlang) {
+
+                    $db->table('dbo.LIS_RegistrasiRiwayat')
+                        ->insert([
+                            'IDLab' => $idLab,
+                            'NoLabLama' => $noLabLama,
+                            'NoLabBaru' => $noLabBaru,
+                            'JenisProses' => 'REGISTRASI_ULANG',
+                            'Alasan' => $data['alasan']
+                                ?? 'Registrasi ulang petugas',
+                            'UserProses' => $username,
+                            'TanggalProses' => now(),
+                        ]);
+                }
+
+                // UPDATE NOMOR LIS BARU
+                $db->table('dbo.Laborat')
+                    ->where('IDLab', $idLab)
+                    ->update([
+                        'No_Lab_LIS_New' => $noLabBaru,
+                    ]);
+
+            });
+
+            // =========================================
+            // 6. RESPONSE BERHASIL
+            // =========================================
+            return response()->json([
+                'success' => true,
+                'message' => $konfirmasiUlang
+                    ? 'Registrasi ulang LIS berhasil.'
+                    : 'Registrasi LIS berhasil.',
+                'IDLab' => $idLab,
+                'registrasi_ulang' => $konfirmasiUlang,
+                'no_lab_lama' => $noLabLama ?: null,
+                'no_lab' => $noLabBaru,
+                'no_registrasi' => $noRegistrasi,
+            ], 200);
+
+        } catch (\Throwable $e) {
+
+            Log::error('Registrasi LIS Baru bermasalah', [
+                'IDLab' => $idLab,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'Status registrasi belum dapat dipastikan. '
+                    . 'Periksa LIS dan riwayat SIMRS '
+                    . 'sebelum melakukan registrasi ulang.',
+            ], 500);
+
+        } finally {
+
+            $lock->release();
+
+        }
+    }
+
+    // TARIK HASIL LIS BARU (ADAM / PERTAMINDO) 
+    public function tarikLISNew(Request $request)
+    {
+        $request->validate([
+            'IDLab' => 'required|integer|min:1',
+        ]);
+
+        $idLab = (int) $request->IDLab;
+
+        $username = trim(
+            (string) session('userlab_username', '')
+        );
+
+        if ($username === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Session petugas tidak ditemukan.',
+            ], 401);
+        }
+
+        try {
+
+            // Jalankan Stored Procedure SQL Server
+            $result = DB::connection('sqlsrv')->select(
+                'EXEC dbo.TarikLISNew_SP @IDLab = ?',
+                [$idLab]
+            );
+
+            $hasil = $result[0] ?? null;
+
+            if (!$hasil || !(bool) $hasil->Success) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Proses tarik hasil LIS gagal.',
+                ], 422);
+            }
+
+            Log::info('Tarik LIS Baru berhasil', [
+                'IDLab' => $idLab,
+                'InboxID' => $hasil->InboxID,
+                'JumlahTersinkron' => $hasil->JumlahTersinkron,
+                'Petugas' => $username,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => $hasil->Pesan,
+                'IDLab' => $idLab,
+                'InboxID' => $hasil->InboxID,
+                'NoLIS' => $hasil->NoLIS,
+                'JumlahTersinkron' => $hasil->JumlahTersinkron,
+            ], 200);
+
+        } catch (\Throwable $e) {
+
+            Log::error('Tarik LIS Baru gagal', [
+                'IDLab' => $idLab,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menarik hasil LIS Baru. '
+                    . 'Periksa log Laravel untuk detail kesalahan.',
+            ], 500);
+        }
+    }
+
+
+
 }

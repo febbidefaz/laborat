@@ -359,7 +359,7 @@
                 .addClass('btn-outline-primary')
                 .html(`
                 <i class="fas fa-paper-plane mr-1"></i>
-                Insert LIS Saba
+                Insert Saba
             `);
 
             return;
@@ -427,7 +427,7 @@
                         .addClass('btn-outline-primary')
                         .html(`
                         <i class="fas fa-paper-plane mr-1"></i>
-                        Insert LIS Saba
+                        Insert Saba
                     `);
                 }
 
@@ -450,7 +450,7 @@
                     .addClass('btn-outline-primary')
                     .html(`
                     <i class="fas fa-paper-plane mr-1"></i>
-                    Insert LIS Saba
+                    Insert Saba
                 `);
             }
 
@@ -744,5 +744,123 @@
         `);
             }
         });
+    }
+
+    function tampilkanStatusLISNew(noLab) {
+
+        const nomor = String(noLab || '').trim();
+        const $btn = $('#btnRegLIS');
+
+        if (nomor !== '') {
+
+            // Sudah ada nomor LIS Baru
+            $btn.html(
+                '<i class="fas fa-paper-plane mr-1"></i> Ada LIS'
+            );
+
+            $btn.attr('title', 'No LIS: ' + nomor);
+
+            $btn.css({
+                'color': '#28a745',
+                'border': '1px solid #28a745'
+            });
+
+        } else {
+
+            // Belum registrasi LIS
+            $btn.html(
+                '<i class="fas fa-paper-plane mr-1"></i> Reg LIS'
+            );
+
+            $btn.attr('title', 'Registrasi pemeriksaan ke LIS ADAM');
+
+            $btn.css({
+                'color': '#6f42c1',
+                'border': '1px solid #6f42c1'
+            });
+        }
+    }
+
+    // Tarik LIS Adam New
+    async function tarikLISNew() {
+
+        const idLab = String(
+            $('#labIDLab').val() || ''
+        ).trim();
+
+        const $btn = $('#btnTarikLISNew');
+
+        if (!idLab) {
+            notifWarning(
+                'ID Lab belum tersedia',
+                'Simpan pemeriksaan laboratorium dahulu.'
+            );
+            return;
+        }
+
+        if ($btn.prop('disabled')) return;
+
+        const konfirmasi = await konfirmasiAksi({
+            title: 'Tarik Hasil LIS Baru?',
+            text: 'Ambil hasil pemeriksaan untuk IDLab ' +
+                idLab + ' dari LIS ADAM? ' +
+                'Hasil pemeriksaan yang cocok akan diperbarui.',
+            confirmText: 'Ya, Tarik Hasil'
+        });
+
+        if (!konfirmasi.isConfirmed) return;
+
+        $btn.prop('disabled', true).html(
+            '<i class="fas fa-spinner fa-spin mr-1"></i> Menarik...'
+        );
+
+        try {
+
+            const res = await $.ajax({
+                url: "{{ route('lab.lis.api.tarik') }}",
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    IDLab: idLab
+                }
+            });
+
+            if (!res.success) {
+                notifError(
+                    'Tarik LIS Gagal',
+                    res.message || 'Hasil LIS gagal diproses.'
+                );
+                return;
+            }
+
+            notifSuccess(
+                'Berhasil menarik ' +
+                res.JumlahTersinkron +
+                ' hasil LIS.'
+            );
+
+            // Muat ulang hasil pada tabel pemeriksaan
+            reloadItemLab(idLab);
+
+        } catch (xhr) {
+
+            console.error(
+                'Tarik LIS Baru gagal:',
+                xhr.responseJSON || xhr.responseText
+            );
+
+            notifError(
+                'Tarik LIS Gagal',
+                xhr.responseJSON?.message ||
+                'Hasil belum tersedia atau mapping pemeriksaan tidak sesuai.'
+            );
+
+        } finally {
+
+            $btn.prop('disabled', false).html(
+                '<i class="fas fa-download mr-1"></i> Tarik LIS Baru'
+            );
+        }
     }
 </script>

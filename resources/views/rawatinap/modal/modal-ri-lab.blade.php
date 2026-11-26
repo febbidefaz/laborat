@@ -477,7 +477,7 @@
 
 
                                 {{-- GRUP PEMERIKSAAN --}}
-                                <select id="labGrup" class="form-control form-control-sm mr-2" style="width:200px;"
+                                <select id="labGrup" class="form-control form-control-sm mr-2" style="width:170px;"
                                     onchange="pilihGrupLab()">
 
                                     <option value="">
@@ -488,7 +488,7 @@
 
                                 {{-- NO LIS --}}
                                 <select id="labNoLIS" class="form-control form-control-sm mr-1"
-                                    style="width:220px;">
+                                    style="width:180px;">
 
                                     <option value="">
                                         -- Pilih No LIS --
@@ -506,13 +506,35 @@
 
                                 </button>
 
+
+                                {{-- REG LIS --}}
+                                <button type="button" id="btnRegLIS" class="btn btn-sm mr-2"
+                                    style="color: #6f42c1; border: 1px solid #6f42c1;" onclick="registrasiLISLab()"
+                                    title="Registrasi order pemeriksaan ke LIS ADAM">
+
+                                    <i class="fas fa-paper-plane mr-1"></i>
+                                    Reg LIS
+
+                                </button>
+
+
+                                {{-- TARIK LIS BARU --}}
+                                <button type="button" id="btnTarikLISNew" class="btn btn-sm mr-2"
+                                    style="color:#6f42c1; border:1px solid #6f42c1;" onclick="tarikLISNew()"
+                                    title="Tarik hasil dari LIS ADAM">
+
+                                    <i class="fas fa-download mr-1"></i>
+                                    Tarik LIS
+
+                                </button>
+
                                 {{-- INSERT LIS SABA --}}
                                 <button type="button" id="btnInsertLISSaba"
                                     class="btn btn-outline-primary btn-sm mr-2" data-mode="insert"
                                     onclick="prosesLISSaba()" title="Kirim order pemeriksaan ke LIS Saba">
 
                                     <i class="fas fa-paper-plane mr-1"></i>
-                                    Insert LIS Saba
+                                    Insert Saba
 
                                 </button>
 
@@ -522,7 +544,7 @@
                                     title="Tarik hasil pemeriksaan dari LIS Saba">
 
                                     <i class="fas fa-download mr-1"></i>
-                                    Tarik LIS Saba
+                                    Tarik Saba
 
                                 </button>
 

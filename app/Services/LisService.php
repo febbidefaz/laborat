@@ -107,7 +107,6 @@ class LisService
             ];
         }
     }
-
     
     public function getRegistrasiFromSP(int $idLab): array
     {
@@ -273,10 +272,8 @@ class LisService
         return $this->registrasi($result['data']);
     }
         
-    public function batalOrder(
-        string $noLab,
-        string $noRegistrasi
-    ): array {
+    public function batalOrder(string $noLab, string $noRegistrasi): array 
+    {
 
         $baseUrl = trim(
             (string) config('services.lis.base_url', '')
