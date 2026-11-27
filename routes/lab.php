@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\LisController;
 use App\Http\Controllers\LabController;
 use App\Http\Controllers\LabPrintController;
 use App\Http\Controllers\RawatInapController;
@@ -111,3 +112,10 @@ Route::post('/lis-api/registrasi', [LabController::class, 'registrasiLISApi'])
 
 Route::post('/lis-api/tarik', [LabController::class, 'tarikLISNew'])
     ->name('lis.api.tarik');
+
+Route::get('/lis/info-batal', [LabController::class, 'getInfoBatalLIS'])
+    ->name('lis.info-batal');
+
+// Batal registrasi LIS ADAM
+Route::post('/lis-api/batal', [LisController::class, 'batalOrder'])
+    ->name('lis.api.batal');

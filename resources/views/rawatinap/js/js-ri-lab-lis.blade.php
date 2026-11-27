@@ -40,7 +40,7 @@
 
                 let html = `
                 <option value="">
-                    -- Pilih No LIS --
+                    Pilih No LIS
                 </option>
             `;
 
@@ -804,11 +804,20 @@
             title: 'Tarik Hasil LIS Baru?',
             text: 'Ambil hasil pemeriksaan untuk IDLab ' +
                 idLab + ' dari LIS ADAM? ' +
-                'Hasil pemeriksaan yang cocok akan diperbarui.',
+                'Hasil pemeriksaan dan keterangan hasil akan diperbarui.',
             confirmText: 'Ya, Tarik Hasil'
         });
 
         if (!konfirmasi.isConfirmed) return;
+
+        // Pastikan pemeriksaan aktif tidak berubah
+        if (String($('#labIDLab').val()) !== idLab) {
+            notifWarning(
+                'Pemeriksaan berubah',
+                'Silakan ulangi proses tarik LIS.'
+            );
+            return;
+        }
 
         $btn.prop('disabled', true).html(
             '<i class="fas fa-spinner fa-spin mr-1"></i> Menarik...'
@@ -834,20 +843,42 @@
                 return;
             }
 
-            notifSuccess(
-                'Berhasil menarik ' +
-                res.JumlahTersinkron +
-                ' hasil LIS.'
+            // ==========================================
+            // REFRESH MODAL SETELAH DATABASE TER-UPDATE
+            // ==========================================
+
+            $btn.html(
+                '<i class="fas fa-spinner fa-spin mr-1"></i> Memuat hasil...'
             );
 
-            // Muat ulang hasil pada tabel pemeriksaan
-            reloadItemLab(idLab);
+            try {
+
+                const hasilReload = await reloadItemLab(idLab);
+
+                if (!hasilReload?.success) {
+                    throw new Error('Gagal memuat ulang data.');
+                }
+
+                notifSuccess(
+                    'Berhasil menarik ' +
+                    res.JumlahTersinkron +
+                    ' hasil LIS.'
+                );
+
+            } catch (reloadError) {
+
+                notifWarning(
+                    'Hasil LIS sudah tersimpan',
+                    'Namun tampilan gagal diperbarui. ' +
+                    'Silakan buka kembali pemeriksaan.'
+                );
+            }
 
         } catch (xhr) {
 
             console.error(
                 'Tarik LIS Baru gagal:',
-                xhr.responseJSON || xhr.responseText
+                xhr.status || xhr.message
             );
 
             notifError(
@@ -861,6 +892,215 @@
             $btn.prop('disabled', false).html(
                 '<i class="fas fa-download mr-1"></i> Tarik LIS Baru'
             );
+        }
+    }
+
+    // Batal Order LIS Adam
+    async function batalLISLab() {
+
+        const idLab = String(
+            $('#labIDLab').val() || ''
+        ).trim();
+
+        const idReg = String(
+            $('#labIDReg').val() || ''
+        ).trim();
+
+        const $btn = $('#btnBatalLIS');
+
+        if (!idLab || !idReg) {
+
+            notifWarning(
+                'Laboratorium belum tersedia',
+                'ID pemeriksaan laboratorium tidak ditemukan.'
+            );
+
+            return;
+        }
+
+        if ($btn.prop('disabled')) return;
+
+        $btn.prop('disabled', true).html(`
+            <i class="fas fa-spinner fa-spin mr-1"></i>
+            Cek LIS...
+        `);
+
+        try {
+
+            // ==========================================
+            // AMBIL IDLab DAN No_Lab_LIS_New
+            // ==========================================
+
+            const info = await $.ajax({
+
+                url: "{{ route('lab.lis.info-batal') }}",
+
+                type: 'GET',
+
+                dataType: 'json',
+
+                data: {
+                    IDLab: idLab,
+                    IDReg: idReg
+                }
+
+            });
+
+            if (!info.success) {
+
+                notifWarning(
+                    'Nomor LIS tidak ditemukan',
+                    info.message || 'Belum terdaftar di LIS ADAM.'
+                );
+
+                return;
+            }
+
+            const noLab = String(
+                info.pasien_no_lab || ''
+            ).trim();
+
+            const noRegistrasi = String(
+                info.pasien_no_registrasi || ''
+            ).trim();
+
+            if (!noLab || !noRegistrasi) {
+
+                notifWarning(
+                    'Data LIS tidak lengkap',
+                    'Nomor LIS atau IDLab tidak ditemukan.'
+                );
+
+                return;
+            }
+
+            // ==========================================
+            // KONFIRMASI PEMBATALAN
+            // ==========================================
+
+            const konfirmasi = await Swal.fire({
+
+                title: 'Batal Registrasi LIS?',
+
+                text: 'No LIS: ' + noLab +
+                    ' | IDLab: ' + noRegistrasi,
+
+                icon: 'warning',
+
+                showCancelButton: true,
+
+                confirmButtonColor: '#c14242',
+
+                cancelButtonColor: '#6c757d',
+
+                confirmButtonText: 'Ya, Batal LIS',
+
+                cancelButtonText: 'Tidak',
+
+                reverseButtons: true
+
+            });
+
+            if (!konfirmasi.isConfirmed) return;
+
+            // Pastikan pemeriksaan aktif tidak berubah
+            if (
+                String($('#labIDLab').val()) !== idLab ||
+                String($('#labIDReg').val()) !== idReg
+            ) {
+                notifWarning(
+                    'Pemeriksaan berubah',
+                    'Silakan ulangi proses pembatalan.'
+                );
+                return;
+            }
+
+            $btn.html(`
+                <i class="fas fa-spinner fa-spin mr-1"></i>
+                Membatalkan...
+            `);
+
+            // ==========================================
+            // KIRIM REQUEST BATAL KE API
+            // ==========================================
+
+            const res = await $.ajax({
+
+                url: "{{ route('lab.lis.api.batal') }}",
+
+                type: 'POST',
+
+                contentType: 'application/json',
+
+                dataType: 'json',
+
+                timeout: 35000,
+
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                },
+
+                data: JSON.stringify({
+
+                    pasien_no_lab: noLab,
+
+                    pasien_no_registrasi: noRegistrasi
+
+                })
+
+            });
+
+            // ==========================================
+            // VALIDASI RESPONSE
+            // ==========================================
+
+            if (
+                res.success !== true ||
+                Number(res.status) !== 200
+            ) {
+
+                notifError(
+                    'Batal LIS Gagal',
+                    res.message ||
+                    'Registrasi LIS ADAM gagal dibatalkan.'
+                );
+
+                return;
+            }
+
+            notifSuccess(
+                res.message ||
+                'Registrasi LIS ADAM berhasil dibatalkan.'
+            );
+
+            // Tidak update database SIMRS
+            // Tidak hapus data laboratorium
+            // Tidak reset No_Lab_LIS_New
+            // Tidak reloadItemLab()
+
+        } catch (xhr) {
+
+            notifError(
+
+                'Batal LIS Gagal',
+
+                xhr.status === 0 ?
+                'Status pembatalan belum dapat dipastikan. Periksa LIS ADAM.' :
+                (
+                    xhr.responseJSON?.message ||
+                    'Terjadi kesalahan saat memproses Batal LIS.'
+                )
+
+            );
+
+        } finally {
+
+            $btn.prop('disabled', false).html(`
+                <i class="fas fa-ban mr-1"></i>
+                Batal LIS
+            `);
+
         }
     }
 </script>

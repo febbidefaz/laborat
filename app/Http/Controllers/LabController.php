@@ -388,6 +388,7 @@ class LabController extends Controller
                 'Diagnosa'      => 'nullable|string',
                 'NoteSpPK'      => 'nullable|string',
                 'Verif'         => 'nullable|integer',
+                'Cito'          => 'nullable|boolean',
 
                 'items'                     => 'required|array|min:1',
                 'items.*.LabID'             => 'required|integer',
@@ -507,7 +508,8 @@ class LabController extends Controller
                     No_Lab_LIS,
                     posted,
                     Cetak,
-                    verif
+                    verif,
+                    Cito
                 )
 
                 OUTPUT INSERTED.IDLab
@@ -522,6 +524,7 @@ class LabController extends Controller
                     ?, ?, ?,
                     0,
                     0,
+                    ?,
                     ?
                 )
             ", [
@@ -545,6 +548,8 @@ class LabController extends Controller
                     ? trim($request->NoLIS)
                     : null,
                 $request->Verif ?: null,
+               
+                $request->boolean('Cito'),
                 
             ]);
 
@@ -694,6 +699,7 @@ class LabController extends Controller
             'JamCheck'       => 'nullable',
             'NoteSpPK'       => 'nullable|string',
             'Verif'          => 'nullable|integer',
+            'Cito'           => 'nullable|boolean',
 
             'items'                     => 'required|array|min:1',
             'items.*.LabID'             => 'required|integer',
@@ -875,7 +881,8 @@ class LabController extends Controller
                     NoSP       = ?,
                     NoSPPA     = ?,
                     No_Lab_LIS = ?,
-                    verif      = ?
+                    verif      = ?,
+                    Cito       = COALESCE(?, Cito)
                 WHERE IDLab = ?
                 AND IDReg = ?
             ", [
@@ -901,6 +908,10 @@ class LabController extends Controller
                 : null,   
 
                 $request->Verif ?: null,    
+               
+                $request->filled('Cito')
+                ? $request->boolean('Cito')
+                : null,
 
                 $idLab,
 
@@ -1097,7 +1108,8 @@ class LabController extends Controller
                     L.No_Lab_LIS,
                     L.verif,
                     L.Jam_selesai,
-                    L.No_Lab_LIS_New
+                    L.No_Lab_LIS_New,
+                    L.Cito
                 FROM dbo.Laborat L
                 WHERE L.IDLab = ?
             ", [
@@ -1110,6 +1122,8 @@ class LabController extends Controller
                     'message' => 'Data laboratorium tidak ditemukan.'
                 ], 404);
             }
+
+            $header->Cito = (bool) ($header->Cito ?? false);
 
 
             /*
@@ -1513,6 +1527,7 @@ class LabController extends Controller
             'JamAmbil'   => 'nullable',
             'JamCheck'   => 'nullable',
             'NoteSpPK'   => 'nullable|string',
+            'Cito'       => 'nullable|boolean',
         ]);
 
         $username = substr(
@@ -1697,7 +1712,8 @@ class LabController extends Controller
                     NoSPPA,
                     No_Lab_LIS,
                     posted,
-                    Cetak
+                    Cetak,
+                    Cito
                 )
     
                 OUTPUT INSERTED.IDLab
@@ -1711,7 +1727,8 @@ class LabController extends Controller
                     GETDATE(),
                     ?, ?, ?,
                     0,
-                    0
+                    0,
+                    ?
                 )
             ", [
     
@@ -1746,7 +1763,9 @@ class LabController extends Controller
                 
                 $request->NoLIS
                     ? trim($request->NoLIS)
-                    : null
+                    : null,
+               
+                $request->boolean('Cito')
             ]);
     
     
@@ -1868,11 +1887,11 @@ class LabController extends Controller
             ]);
     
     
-        } catch (\Throwable $e) {
-    
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
+            } catch (\Throwable $e) {
+        
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
             ], 500);
         }
     }
@@ -3083,6 +3102,71 @@ class LabController extends Controller
                 'success' => false,
                 'message' => 'Gagal menarik hasil LIS Baru. '
                     . 'Periksa log Laravel untuk detail kesalahan.',
+            ], 500);
+        }
+    }
+
+    // Ambil parameter Batal LIS ADAM
+    public function getInfoBatalLIS(Request $request)
+    {
+        $request->validate([
+            'IDLab' => 'required|integer',
+            'IDReg' => 'required|integer',
+        ]);
+
+        try {
+
+            $data = DB::selectOne("
+                SELECT
+                    L.IDLab,
+                    L.No_Lab_LIS_New
+                FROM dbo.Laborat L
+                WHERE L.IDLab = ?
+                AND L.IDReg = ?
+            ", [
+                (int) $request->IDLab,
+                (int) $request->IDReg
+            ]);
+
+            if (!$data) {
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data laboratorium tidak ditemukan.'
+                ], 404);
+            }
+
+            $noLab = trim(
+                (string) ($data->No_Lab_LIS_New ?? '')
+            );
+
+            if ($noLab === '') {
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nomor LIS ADAM belum tersedia.'
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => true,
+
+                'pasien_no_lab' =>
+                    $noLab,
+
+                'pasien_no_registrasi' =>
+                    (string) $data->IDLab
+            ]);
+
+        } catch (\Throwable $e) {
+
+            Log::error('Gagal mengambil parameter Batal LIS', [
+                'IDLab' => $request->IDLab
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data LIS ADAM.'
             ], 500);
         }
     }

@@ -23,6 +23,7 @@
 
         $('#labMode').val('insert');
         $('#labIDLab').val('');
+        $('#labCito').prop('checked', false);
 
         $('#modalLabTitle').html(
             '<i class="fas fa-vials mr-2"></i>' +
@@ -80,6 +81,11 @@
         $('#labMode').val('update');
         $('#labIDLab').val(idLab);
 
+        // RESET CITO SEBELUM LOAD DATA
+        $('#labCito')
+            .prop('checked', false)
+            .prop('disabled', true);
+
 
         $('#modalLabTitle').html(
             '<i class="fas fa-vials mr-2"></i>' +
@@ -134,6 +140,12 @@
                 // STATUS REGISTRASI LIS BARU
                 tampilkanStatusLISNew(h.No_Lab_LIS_New ?? '');
 
+                // STATUS CITO            
+                $('#labCito').prop(
+                    'checked',
+                    h.Cito === true
+                );
+
 
                 // ====================================================
                 // HEADER
@@ -178,9 +190,13 @@
 
                 if (h.NoSP) {
 
-                    loadInfoSPLab();
+                    $('#labNoSP').val(String(h.NoSP));
+
+                    loadInfoSPLab(h.NoSP);
 
                 } else if (h.NoSPPA) {
+
+                    $('#labNoSPPA').val(String(h.NoSPPA));
 
                     loadInfoSPPA();
                 }
@@ -458,6 +474,12 @@
         | HEADER
         |--------------------------------------------------------------------------
         */
+
+        // STATUS CITO
+        $('#labCito').prop(
+            'disabled',
+            detail
+        );
 
         $('#labDokter').prop(
             'disabled',
@@ -1085,6 +1107,8 @@
 
                 Verif: $('#labAnalis').val(),
 
+                Cito: $('#labCito').is(':checked'),
+
                 items: labItems
 
             }),
@@ -1260,11 +1284,15 @@
 
     function reloadItemLab(idLab) {
 
-        $.ajax({
+        return $.ajax({
 
             url: "{{ url('/lab/detail') }}/" + idLab,
 
             type: "GET",
+
+            dataType: "json",
+
+            cache: false,
 
             success: function(res) {
 
@@ -1278,6 +1306,24 @@
                     return;
                 }
 
+                // ==========================================
+                // REFRESH HEADER LABORATORIUM
+                // ==========================================
+
+                const h = res.header || {};
+
+                // Refresh keterangan hasil dari LIS
+                $('#labNoteSpPk').val(h.Note ?? '');
+
+                // Refresh status Cito
+                $('#labCito').prop('checked', h.Cito === true);
+
+                // Refresh status nomor LIS Baru
+                tampilkanStatusLISNew(h.No_Lab_LIS_New ?? '');
+
+                // ==========================================
+                // REFRESH DETAIL PEMERIKSAAN
+                // ==========================================
 
                 labItems =
                     (res.items || []).map(

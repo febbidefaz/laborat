@@ -1,12 +1,15 @@
 <script>
-    function loadInfoSPLab() {
+    function loadInfoSPLab(selectedNoSP = null) {
 
-        const noSP = $('#labNoSP').val();
+        const noSP = String(
+            selectedNoSP ?? $('#labNoSP').val() ?? ''
+        ).trim();
 
-        console.log('No SP dipilih:', noSP);
-        console.log('ID pasien:', "{{ $pasien->ID }}");
+        const idReg = String(
+            $('#labIDReg').val() || ''
+        ).trim();
 
-        if (!noSP) {
+        if (!noSP || !idReg) {
 
             $('#labInfoPemeriksaan').val(
                 'Belum ada pemeriksaan dipilih.'
@@ -18,34 +21,39 @@
             return;
         }
 
+        $('#labInfoPemeriksaan').val(
+            'Memuat pemeriksaan...'
+        );
 
-        $('#labInfoPemeriksaan').html(`
-                <span class="text-muted">
-                    <i class="fas fa-spinner fa-spin mr-1"></i>
-                    Memuat pemeriksaan...
-                </span>
-            `);
-
-
-        $.ajax({
+        return $.ajax({
 
             url: "{{ route('lab.sp.info') }}",
 
             type: "GET",
 
+            dataType: "json",
+
+            cache: false,
+
             data: {
-                id: "{{ $pasien->ID }}",
+                id: idReg,
                 no: noSP
             },
 
             success: function(res) {
 
-                console.log('RESPON SP LAB:', res);
+                // Pastikan SP yang aktif tidak berubah
+                if (
+                    String($('#labNoSP').val()) !== noSP ||
+                    String($('#labIDReg').val()) !== idReg
+                ) {
+                    return;
+                }
 
                 if (!res.success) {
 
-                    $('#labInfoPemeriksaan').html(
-                        '<span class="text-danger">Data pemeriksaan tidak ditemukan.</span>'
+                    $('#labInfoPemeriksaan').val(
+                        'Data pemeriksaan tidak ditemukan.'
                     );
 
                     $('#labDiagnosa').val('');
@@ -54,27 +62,28 @@
                     return;
                 }
 
-
-                const isi = res.isiA ?? '';
-                const diag = res.Diag ?? '';
-                const bb = res.BB ?? '';
-
                 $('#labInfoPemeriksaan').val(
-                    isi ?
-                    isi :
-                    'Tidak ada detail pemeriksaan.'
+                    res.isiA || 'Tidak ada detail pemeriksaan.'
                 );
 
-                $('#labDiagnosa').val(diag);
-                $('#labBB').val(bb);
+                $('#labDiagnosa').val(
+                    res.Diag ?? ''
+                );
+
+                $('#labBB').val(
+                    res.BB ?? ''
+                );
             },
 
             error: function(xhr) {
 
-                console.log('ERROR SP LAB:', xhr.responseText);
+                console.error(
+                    'ERROR SP LAB:',
+                    xhr.status
+                );
 
-                $('#labInfoPemeriksaan').html(
-                    '<span class="text-danger">Gagal mengambil data SP Lab.</span>'
+                $('#labInfoPemeriksaan').val(
+                    'Gagal mengambil data SP Lab.'
                 );
 
                 $('#labDiagnosa').val('');

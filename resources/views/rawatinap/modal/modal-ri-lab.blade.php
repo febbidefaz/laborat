@@ -53,27 +53,26 @@
 
                                     <div class="form-group row mb-2">
                                         <label class="col-sm-3 col-form-label col-form-label-sm">
-                                            ID Reg
+                                            IDReg / RM
                                         </label>
 
-                                        <div class="col-sm-5">
+                                        <div class="col-sm-4">
                                             <input type="text" id="labIDReg" class="form-control form-control-sm"
                                                 value="{{ $pasien->ID ?? '' }}" readonly>
                                         </div>
-                                    </div>
 
+                                    </div>
 
                                     <div class="form-group row mb-2">
                                         <label class="col-sm-3 col-form-label col-form-label-sm">
-                                            No RM
+                                            INo RM
                                         </label>
 
-                                        <div class="col-sm-5">
+                                        <div class="col-sm-4">
                                             <input type="text" class="form-control form-control-sm"
                                                 value="{{ $pasien->RegNum ?? '' }}" readonly>
                                         </div>
                                     </div>
-
 
                                     <div class="form-group row mb-2">
                                         <label class="col-sm-3 col-form-label col-form-label-sm">
@@ -159,6 +158,9 @@
                                         </div>
 
                                     </div>
+
+                                    {{-- CITO --}}
+
 
                                 </div>
 
@@ -376,14 +378,30 @@
                                         </div>
                                     </div>
 
-                                    {{-- BB --}}
+                                    {{-- BB / CITO --}}
                                     <div class="form-group row mb-2 align-items-center">
 
                                         <label class="col-sm-4 col-form-label col-form-label-sm mb-0">
-                                            BB
+                                            Cito / BB
                                         </label>
 
-                                        <div class="col-sm-4">
+                                        {{-- CHECKBOX CITO --}}
+                                        <div class="col-sm-2 pl-2">
+
+                                            <div class="custom-control custom-checkbox">
+
+                                                <input type="checkbox" class="custom-control-input" id="labCito"
+                                                    name="Cito" value="1">
+
+                                                <label class="custom-control-label" for="labCito"
+                                                    title="Pemeriksaan Cito"></label>
+
+                                            </div>
+
+                                        </div>
+
+                                        {{-- BERAT BADAN --}}
+                                        <div class="col-sm-4 pr-1">
 
                                             <div class="input-group input-group-sm">
 
@@ -391,16 +409,14 @@
                                                     class="form-control form-control-sm text-center" readonly>
 
                                                 <div class="input-group-append">
-
-                                                    <span class="input-group-text">
-                                                        kg
-                                                    </span>
-
+                                                    <span class="input-group-text">kg</span>
                                                 </div>
 
                                             </div>
 
                                         </div>
+
+
 
                                     </div>
 
@@ -467,21 +483,21 @@
 
                                 {{-- GRUP KELOMPOK --}}
                                 <select id="labGrupKelompok" class="form-control form-control-sm mr-2"
-                                    style="width:150px;" onchange="pilihGrupKelompokLab()">
+                                    style="width:90px;" onchange="pilihGrupKelompokLab()">
 
                                     <option value="">
-                                        -- Group Kelompok --
+                                        Group Kel
                                     </option>
 
                                 </select>
 
 
                                 {{-- GRUP PEMERIKSAAN --}}
-                                <select id="labGrup" class="form-control form-control-sm mr-2" style="width:170px;"
+                                <select id="labGrup" class="form-control form-control-sm mr-2" style="width:150px;"
                                     onchange="pilihGrupLab()">
 
                                     <option value="">
-                                        -- Group Pemeriksaan --
+                                        Group Pemeriksaan
                                     </option>
 
                                 </select>
@@ -491,7 +507,7 @@
                                     style="width:180px;">
 
                                     <option value="">
-                                        -- Pilih No LIS --
+                                        Pilih No LIS
                                     </option>
 
                                 </select>
@@ -517,7 +533,6 @@
 
                                 </button>
 
-
                                 {{-- TARIK LIS BARU --}}
                                 <button type="button" id="btnTarikLISNew" class="btn btn-sm mr-2"
                                     style="color:#6f42c1; border:1px solid #6f42c1;" onclick="tarikLISNew()"
@@ -525,6 +540,16 @@
 
                                     <i class="fas fa-download mr-1"></i>
                                     Tarik LIS
+
+                                </button>
+
+                                {{-- Batal REG LIS --}}
+                                <button type="button" id="btnBatalLIS" class="btn btn-sm mr-2"
+                                    style="color:#c14242; border:1px solid #c14242;" onclick="batalLISLab()"
+                                    title="Batal registrasi di LIS ADAM">
+
+                                    <i class="fas fa-ban mr-1"></i>
+                                    Batal LIS
 
                                 </button>
 

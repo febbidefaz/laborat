@@ -36,7 +36,7 @@
 
                 let html = `
                     <option value="">
-                        -- Grup Pemeriksaan --
+                        Grup Pemeriksaan
                     </option>
                 `;
 
@@ -64,7 +64,7 @@
 
                 $('#labGrup').html(`
                     <option value="">
-                        -- Gagal memuat grup --
+                        Gagal memuat grup
                     </option>
                 `);
             }
@@ -377,7 +377,7 @@
 
                 let html = `
                     <option value="">
-                        -- Grup Kelompok --
+                       Grup Kel
                     </option>
                 `;
 
@@ -831,7 +831,6 @@
             cekStatusLISNew();
         }
     }
-
 
     function cekStatusLISNew() {
 
